@@ -57,14 +57,16 @@
 		this.dimensions = {
 			canvasWidth : window.innerWidth * .95,
 			canvasOffsetX : (window.innerWidth * .05 / 2),
-			canvasHeight : 10 * 20,
+			canvasHeight : 15 * 17,
 			canvasOffsetY : (window.innerHeight * .05 / 2),
-			rowHeight : 10
+			rowHeight : 15
 		}
 		this.dataDomain = this.getDomainForData(data);
 		this.canvas = this.createCanvas();
 		this.x = this.getScaleX();
 		this.y = this.getScaleY();
+		this.drawTicks();
+		this.drawStoriesChart();
 		
 		this.scaleTo('initial');
 
@@ -74,22 +76,28 @@
 
 	Vis.prototype.drawTicks = function () {
 		var date = d3.time.day.floor(new Date(this.dataDomain.min));
+		var vis = this;
 
 		this.oneDay = this.x(d3.time.day.offset(date, 1).getTime()) - this.x(date);
 
+		var tickPoints = [];
+
 		while (date.getTime() < this.dataDomain.max) {
 			date = d3.time.hour.floor(date);
+			tickPoints.push(date.getTime());
+			date = d3.time.day.offset(date, 1);
+		}
 
-			this.canvas.append('line')
+		this.canvas.selectAll('.tick')
+			.data(tickPoints)
+			.enter()
+				.append('line')
 				.attr('class', 'tick')
-				.attr('x1', this.x(date.getTime()))
-				.attr('x2', this.x(date.getTime()))
+				.attr('x1', function(d) { return vis.x(d) })
+				.attr('x2', function(d) { return vis.x(d) })
 				.attr('y1', 0)
 				.attr('y2', this.dimensions.canvasHeight)
 				.attr('stroke', '#F7f7f7')
-
-			date = d3.time.day.offset(date, 1);
-		}
 	}
 
 	Vis.prototype.getDomainForData = function (data) {
@@ -144,23 +152,6 @@
 			.range([0, this.dimensions.canvasWidth]);
 	}
 	
-	Vis.prototype.scaleTo = function (min, max) {
-		if (min === 'fit' && max === undefined) {
-			min = this.dataDomain.min;
-			max = this.dataDomain.max;
-		}
-
-		if (min === 'initial' && max === undefined) {
-			min = d3.time.day.floor(new Date(this.dataDomain.min));
-			max = d3.time.day.offset(min, 14);
-		}
-
-		this.x.domain([min, max]);
-
-		this.canvas.selectAll('*').remove();
-		this.drawTicks();
-		this.drawStoriesChart();
-	}
 
 	Vis.prototype.positionGuide = function (x) {
 		this.guide.attr('transform', 'translate(' + x + ', 0)');
@@ -232,13 +223,17 @@
 				w = parseInt(vis.dragVolume.attr('width'));
 				x = parseInt(vis.dragVolume.attr('x'));
 
+				vis.dragVolume.remove();
+				vis.dragVolume = undefined;
+
+				if (w < 2) {
+					return;
+				}
+
 				startDate = vis.x.invert(x);
 				endDate = vis.x.invert(x + w);
 
 				vis.scaleTo(startDate, endDate);
-
-				vis.dragVolume.remove();
-				vis.dragVolume = undefined;
 			}
 		});
 
@@ -268,6 +263,62 @@
 		return this.colorForDesk(deskName);
 	}
 
+	Vis.prototype.colorForRole = function (roleName) {
+		if (roleName.length === 0) {
+			return Palette[0];
+		}
+
+		this.roleColors = this.roleColors || {};
+ 
+		if (this.roleColors[roleName]) {
+			return this.roleColors[roleName];
+		}
+
+		this.roleColors[roleName] = Palette[objectSize(this.roleColors) % Palette.length];
+		return this.colorForRole(roleName);
+	}
+
+	Vis.prototype.scaleTo = function (min, max) {
+		if (min === 'fit' && max === undefined) {
+			min = this.dataDomain.min;
+			max = this.dataDomain.max;
+		}
+
+		if (min === 'initial' && max === undefined) {
+			min = d3.time.day.floor(new Date(this.dataDomain.min));
+			max = d3.time.day.offset(min, 14);
+		}
+
+		this.x.domain([min, max]);
+
+		var vis = this;
+		var date = d3.time.day.floor(new Date(this.dataDomain.min));
+		this.oneDay = this.x(d3.time.day.offset(date, 1).getTime()) - this.x(date);
+
+		this.canvas.selectAll('.tick')
+			.transition().ease('quad-in-out').duration(150)
+			.attr('x1', function(d) { return vis.x(d) })
+			.attr('x2', function(d) { return vis.x(d) })
+
+		this.canvas.selectAll('.update')
+			.transition().ease('quad-in-out').duration(150)
+			.attr('cx', function (d) { return vis.x(d) });
+
+		this.canvas.selectAll('.row')
+			.transition().ease('quad-in-out').duration(150)
+			.attr('x', function(d) { return vis.x(d3.time.day.floor(d.date).getTime()) })
+			.attr('width', this.oneDay)
+
+		this.canvas.selectAll('.lifespan')
+			.transition().ease('quad-in-out').duration(150)
+			.attr('x1', function(d) { return vis.x(d.date.getTime()) })
+			.attr('x2', function(d) { return vis.x(d.endDate.getTime()) })
+
+		this.canvas.selectAll('.tooltip')
+			.transition().ease('quad-in-out').duration(150)
+			.attr('transform', function(d) { return 'translate(' + vis.x(d.date.getTime()) + ', -10)' })
+
+	}
 	// DRAWLING
 	Vis.prototype.createCanvas = function () {
 		var wrapper = d3.select('body').append('div');
@@ -349,7 +400,7 @@
 
 					return 'translate(0, ' + (vis.dimensions.canvasHeight - pos * vis.dimensions.rowHeight - vis.dimensions.rowHeight) + ')'; 
 				})
-				.attr('data-color', function(d, i) { return vis.colorForDesk(d.desk) })
+				.attr('data-color', function(d, i) { return vis.colorForRole(d.role) })
 
 		var hitTarget = story.append('rect')
 			.attr('class', 'row')
@@ -359,6 +410,7 @@
 			.attr('height', this.dimensions.rowHeight)
 		
 		var lifespan = story.append('line')
+			.attr('class', 'lifespan')
 			.attr('x1', function(d) { return vis.x(d.date.getTime()) })
 			.attr('x2', function(d) { return vis.x(d.endDate.getTime()) })
 			.attr('y1', this.dimensions.rowHeight / 2)
@@ -370,7 +422,8 @@
 		var update = story.selectAll('circle')
 			.data(function(d) { return d.updates })
 			.enter().append('circle')
-				.attr('r', 2.5)
+				.attr('class', 'update')
+				.attr('r', 3)
 				.attr('fill', function(d, i) { return this.parentNode.getAttribute('data-color'); })
 				.attr('cx', function(d) { return vis.x(d.getTime()) })
 				.attr('cy', this.dimensions.rowHeight / 2)
@@ -386,7 +439,7 @@
 			.attr('class', 'legend');
 
 		var legendItem = legend.selectAll('.legend-item')
-			.data(Object.keys(this.deskColors).map(function(key) { return [key, vis.deskColors[key] ] }))
+			.data(Object.keys(this.roleColors).map(function(key) { return [key, vis.roleColors[key] ] }))
 			.enter()
 				.append('div')
 				.attr('class', 'legend-item')
@@ -452,7 +505,7 @@
 				headline : d.Headline,
 				desk : d.Desk,
 				type : d.Type,
-				role : d['What it Does']
+				role : d.Role
 			}
 		}, function (error, rows) {
 			rows = rows.sort(function (a, b) {
