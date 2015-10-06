@@ -162,12 +162,19 @@
 		this.drawStoriesChart();
 	}
 
+	Vis.prototype.positionGuide = function (x) {
+		this.guide.attr('transform', 'translate(' + x + ', 0)');
+		this.guide.selectAll('text').text(moment(this.x.invert(x)).format('MMMM Do YYYY h:mm a'))
+	}
+
 	Vis.prototype.listen = function () {
 		var vis = this;
 		this.canvas.on('mousemove', function () {
 			var mouse = d3.mouse(this);
-			vis.guide.attr('transform', 'translate(' + mouse[0] + ', 0)');
-			vis.guide.selectAll('text').text(moment(vis.x.invert(mouse[0])).format('MMMM Do YYYY h:mm a'))
+			vis.positionGuide(mouse[0]);
+
+			var e = new CustomEvent('moveTo', { 'detail' : mouse[0] });
+			window.dispatchEvent(e);
 		});
 
 		var drag = d3.behavior.drag();
@@ -459,15 +466,25 @@
 			});
 
 			if (!error) {
-				vis = new Vis(rows, data[1]);
+				Graphs.push(new Vis(rows, data[1]));
 			} else {
 				console.log(error);
 			}
 		});
 	}
 
+	var Graphs = [];
+
 	Data.forEach(function (datum) {
 		drawGraph(datum);
+	});
+
+	window.addEventListener('moveTo', function(e) {
+
+		Graphs.forEach(function(graph) {
+			graph.positionGuide(e.detail);
+		});
+
 	});
 
 })();
