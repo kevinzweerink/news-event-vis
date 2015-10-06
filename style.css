@@ -1,0 +1,134 @@
+html, body {
+	margin : 0;
+	padding : 0;
+	background: #FAFAFA;
+}
+
+text {
+	font-family: 'nyt-franklin', 'franklin-gothic', 'Franklin Gothic', helvetica, arial;
+}
+
+.chart {
+	width: 100%;
+	overflow: visible;
+	position: relative;
+	margin-bottom: 4rem;
+	border-top: 1px solid #f7f7f7;
+	border-bottom: 1px solid #F7f7f7;
+	background: #FFF;
+}
+
+.canvas {
+	cursor: col-resize;
+	display: block;
+	margin: auto;
+	overflow: visible;
+}
+
+.zoom-controls {
+	display: inline-block;
+	position: absolute;
+	bottom: -45px;
+	right: 15px;
+}
+
+.button {
+	display: inline-block;
+	padding: 5px 10px;
+	background: #e2e2e2;
+	color: #999999;
+	font-family: 'nyt-franklin','NYT Franklin', 'Franklin Gothic', 'franklin-gothic', helvetica;
+	border-radius: 4px;
+	text-decoration: none;
+	margin-left: 15px;
+}
+
+.row {
+	fill : rgba(0,0,0,0);
+}
+
+g {
+	overflow: visible;
+}
+
+h1 {
+	font-family: 'nyt-franklin','NYT Franklin', 'Franklin Gothic', 'franklin-gothic', helvetica;
+	padding: 0 18px;
+	font-weight: 400;
+	color: #333;
+}
+
+.story {
+	z-index: 1;
+}
+
+.story circle {
+	opacity: 0;
+}
+
+.story line {
+	opacity: 0;
+}
+
+.story circle:first-of-type {
+	opacity: 1;
+}
+
+.story:hover {
+	z-index: 500;
+}
+
+.story:hover circle {
+	opacity: 1;
+}
+
+.story:hover line {
+	opacity: 0.3;
+}
+
+.story .tooltip {
+	opacity : 0;
+	pointer-events: none;
+}
+
+.story:hover .tooltip {
+	opacity : 1;
+}
+
+.story:hover .row {
+	fill : rgba(0,0,0,0.05);
+}
+
+.legend {
+	pointer-events: none;
+	position: absolute;
+	top: 0;
+	left: 0;
+	padding: 10px;
+	width: 50%;
+}
+
+.legend-item {
+	display: inline-block;
+	font-family: 'nyt-franklin','NYT Franklin', 'Franklin Gothic', 'franklin-gothic', helvetica;
+	padding: 2px 5px 3px;
+	background: #F3F3F3;
+	border-radius: 3px;
+	margin-right: 8px;
+	margin-bottom: 8px;
+}
+
+.legend-item h6 {
+	display: inline-block;
+	margin: 0 0 0 7px;
+	color: #333;
+}
+
+.legend-key {
+	display: inline-block;
+	position: relative;
+	width: 10px;
+	height: 10px;
+	border-radius: 3px;
+	top: 1px;
+}
