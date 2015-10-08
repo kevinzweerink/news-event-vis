@@ -21,7 +21,8 @@
 
 	var Data = [
 		['vw.csv','Volkswagen Diesel Deception'],
-		['germanwings.csv', 'Germanwings Crash']
+		['germanwings.csv', 'Germanwings Crash'],
+		['boston.csv', 'Boston Marathon Bombing']
 	];
 
 	function objectSize(obj) {
@@ -57,7 +58,7 @@
 		this.dimensions = {
 			canvasWidth : window.innerWidth * .95,
 			canvasOffsetX : (window.innerWidth * .05 / 2),
-			canvasHeight : 15 * 17,
+			canvasHeight : 15 * 25,
 			canvasOffsetY : (window.innerHeight * .05 / 2),
 			rowHeight : 15
 		}
@@ -337,6 +338,7 @@
 
 		restore.on('click', function(e) { 
 			d3.event.stopPropagation();
+			d3.event.preventDefault();
 			vis.scaleTo('initial');
 		});
 
@@ -347,6 +349,7 @@
 
 		fit.on('click', function(e) {
 			d3.event.stopPropagation();
+			d3.event.preventDefault();
 			vis.scaleTo('fit');
 		})
 
