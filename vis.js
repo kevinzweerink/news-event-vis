@@ -55,6 +55,23 @@
 
 	Vis.prototype.init = function (data, title) {
 		this.data = data;
+		this.title = title;
+		this.getDimensions();
+		this.dataDomain = this.getDomainForData(data);
+		this.canvas = this.createCanvas();
+		this.x = this.getScaleX();
+		this.y = this.getScaleY();
+		this.drawTicks();
+		this.drawStoriesChart();
+		this.shouldBin = true;
+		this.binFidelity = d3.time.day;
+		
+		this.scaleTo('initial');
+
+		this.listen();
+	}
+
+	Vis.prototype.getDimensions = function () {
 		this.dimensions = {
 			canvasWidth : window.innerWidth * .95,
 			canvasOffsetX : (window.innerWidth * .05 / 2),
@@ -62,16 +79,11 @@
 			canvasOffsetY : (window.innerHeight * .05 / 2),
 			rowHeight : 15
 		}
-		this.dataDomain = this.getDomainForData(data);
-		this.canvas = this.createCanvas();
-		this.x = this.getScaleX();
-		this.y = this.getScaleY();
-		this.drawTicks();
-		this.drawStoriesChart();
-		
-		this.scaleTo('initial');
 
-		this.listen();
+		if (this.canvas) {
+			this.canvas.attr('width', this.dimensions.canvasWidth)
+			this.canvas.attr('height', this.dimensions.canvasHeight)
+		}
 	}
 
 
@@ -99,6 +111,27 @@
 				.attr('y1', 0)
 				.attr('y2', this.dimensions.canvasHeight)
 				.attr('stroke', '#F7f7f7')
+
+		this.canvas.append('text')
+			.attr('class', 'chart-title')
+			.attr('x', this.dimensions.canvasWidth / 2)
+			.attr('y', -10)
+			.attr('text-anchor', 'middle')
+			.text(this.title)
+
+		this.canvas.append('text')
+			.attr('class', 'range-label range-label-start')
+			.attr('x', 0)
+			.attr('y', -10)
+			.attr('text-anchor', 'start')
+			.text(moment(this.x.invert(0)).format('MMMM Do YYYY'))
+
+		this.canvas.append('text')
+			.attr('class', 'range-label range-label-end')
+			.attr('x', this.dimensions.canvasWidth)
+			.attr('y', -10)
+			.attr('text-anchor', 'end')
+			.text(moment(this.x.invert(this.dimensions.canvasWidth)).format('MMMM Do YYYY'))
 	}
 
 	Vis.prototype.getDomainForData = function (data) {
@@ -243,7 +276,7 @@
 				vis.dragVolume.remove();
 				vis.dragVolume = undefined;
 			}
-		})
+		});
 	}
 
 
@@ -279,6 +312,56 @@
 		return this.colorForRole(roleName);
 	}
 
+	Vis.prototype.bin = function (time) {
+
+		if (typeof time !== 'object') {
+			time = new Date(time);
+		}
+
+		if (this.shouldBin) {
+			return this.binFidelity.floor(time).getTime();
+		}
+
+		return time;
+	}
+
+	Vis.prototype.update = function () {
+
+		var vis = this;
+		var date = d3.time.day.floor(new Date(this.dataDomain.min));
+		this.oneDay = this.x(d3.time.day.offset(date, 1).getTime()) - this.x(date);
+
+		this.canvas.selectAll('.tick')
+			.transition().ease('quad-in-out').duration(200)
+			.attr('x1', function(d) { return vis.x(d) })
+			.attr('x2', function(d) { return vis.x(d) })
+
+		this.canvas.selectAll('.update')
+			// .transition().ease('quad-in-out').duration(150)
+			.attr('cx', function (d) { return vis.x(vis.bin(d)) });
+
+		this.canvas.selectAll('.row')
+			// .transition().ease('quad-in-out').duration(150)
+			.attr('x', function(d) { return vis.x(d3.time.day.floor(d.date).getTime()) })
+			.attr('width', this.oneDay)
+
+		this.canvas.selectAll('.lifespan')
+			// .transition().ease('quad-in-out').duration(150)
+			.attr('x1', function(d) { return vis.x(vis.bin(d.date.getTime())) })
+			.attr('x2', function(d) { return vis.x(vis.bin(d.endDate.getTime())) })
+
+		this.canvas.selectAll('.tooltip')
+			// .transition().ease('quad-in-out').duration(150)
+			.attr('transform', function(d) { return 'translate(' + vis.x(vis.bin(d.date.getTime())) + ', -10)' })
+
+		this.canvas.selectAll('.range-label-start')
+			.text(moment(this.x.invert(0)).format('MMMM Do YYYY'))
+
+		this.canvas.selectAll('.range-label-end')
+			.text(moment(this.x.invert(this.dimensions.canvasWidth)).format('MMMM Do YYYY'))
+
+	}
+
 	Vis.prototype.scaleTo = function (min, max) {
 		if (min === 'fit' && max === undefined) {
 			min = this.dataDomain.min;
@@ -292,32 +375,7 @@
 
 		this.x.domain([min, max]);
 
-		var vis = this;
-		var date = d3.time.day.floor(new Date(this.dataDomain.min));
-		this.oneDay = this.x(d3.time.day.offset(date, 1).getTime()) - this.x(date);
-
-		this.canvas.selectAll('.tick')
-			.transition().ease('quad-in-out').duration(150)
-			.attr('x1', function(d) { return vis.x(d) })
-			.attr('x2', function(d) { return vis.x(d) })
-
-		this.canvas.selectAll('.update')
-			.transition().ease('quad-in-out').duration(150)
-			.attr('cx', function (d) { return vis.x(d) });
-
-		this.canvas.selectAll('.row')
-			.transition().ease('quad-in-out').duration(150)
-			.attr('x', function(d) { return vis.x(d3.time.day.floor(d.date).getTime()) })
-			.attr('width', this.oneDay)
-
-		this.canvas.selectAll('.lifespan')
-			.transition().ease('quad-in-out').duration(150)
-			.attr('x1', function(d) { return vis.x(d.date.getTime()) })
-			.attr('x2', function(d) { return vis.x(d.endDate.getTime()) })
-
-		this.canvas.selectAll('.tooltip')
-			.transition().ease('quad-in-out').duration(150)
-			.attr('transform', function(d) { return 'translate(' + vis.x(d.date.getTime()) + ', -10)' })
+		this.update();
 
 	}
 	// DRAWLING
@@ -336,8 +394,7 @@
 			.attr('class', 'restore-zoom button')
 			.text('Restore Initial Zoom')
 
-		restore.on('click', function(e) { 
-			d3.event.stopPropagation();
+		restore.on('click', function(e) {
 			d3.event.preventDefault();
 			vis.scaleTo('initial');
 		});
@@ -348,7 +405,6 @@
 			.text('Show All Points')
 
 		fit.on('click', function(e) {
-			d3.event.stopPropagation();
 			d3.event.preventDefault();
 			vis.scaleTo('fit');
 		})
@@ -381,6 +437,7 @@
 			.attr('stroke-width', 1)
 
 		this.guide.append('text')
+			.attr('class', 'guide-label')
 			.attr('x', 0)
 			.attr('y', this.dimensions.canvasHeight + 20)
 			.attr('fill', '#CCC')
@@ -404,6 +461,7 @@
 					return 'translate(0, ' + (vis.dimensions.canvasHeight - pos * vis.dimensions.rowHeight - vis.dimensions.rowHeight) + ')'; 
 				})
 				.attr('data-color', function(d, i) { return vis.colorForRole(d.role) })
+				.on('click', function(d) { window.open(d.url) })
 
 		var hitTarget = story.append('rect')
 			.attr('class', 'row')
@@ -508,7 +566,8 @@
 				headline : d.Headline,
 				desk : d.Desk,
 				type : d.Type,
-				role : d.Role
+				role : d.Role,
+				url : d.URL
 			}
 		}, function (error, rows) {
 			rows = rows.sort(function (a, b) {
@@ -542,5 +601,16 @@
 		});
 
 	});
+
+	document.querySelector('.bin-setting').addEventListener('click', function (e) {
+		e.preventDefault();
+
+		this.classList.toggle('on');
+
+		Graphs.forEach(function(graph) {
+			graph.shouldBin = !graph.shouldBin;
+			graph.update();
+		})
+	})
 
 })();

@@ -1,18 +1,70 @@
 html, body {
-	margin : 0;
+	margin : 4rem 0 0 0;
 	padding : 0;
 	background: #FAFAFA;
 }
 
 text {
-	font-family: 'nyt-franklin', 'franklin-gothic', 'Franklin Gothic', helvetica, arial;
+	font-family: 'NYTFranklin', 'nyt-franklin', 'franklin-gothic', 'Franklin Gothic', helvetica, arial;
+}
+
+.header {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 95%;
+	padding: 15px 2.5%;
+	border-bottom: 1px solid #E2e2e2;
+	background: #FAFAFA;
+	z-index: 9999999999;
+	overflow:hidden;
+}
+
+.header h1 {
+	display: inline-block;
+	margin-top: 8px;
+}
+
+.button.bin-setting {
+	float: right;
+	position: relative;
+	margin: 0;
+	border: 1px solid #e2e2e2;
+	background: transparent;
+}
+
+.button.bin-setting.on {
+	background: #e2e2e2;
+}
+
+h1 {
+	font-size: 14px;
+	font-family: 'NYTFranklin', 'nyt-franklin','NYT Franklin', 'Franklin Gothic', 'franklin-gothic', helvetica;
+	padding: 0;
+	margin: 0;
+	color: #333;
+	font-weight: 500;
+}
+
+.guide-label {
+	font-family: 'NYTFranklin', 'nyt-franklin','NYT Franklin', 'Franklin Gothic', 'franklin-gothic', helvetica;
+	font-size: 11px;
+	font-weight: 600;
+	color: #333;
+	text-transform: uppercase;
+	letter-spacing: 1px;
+}
+
+.chart-title {
+	font-weight: 500;
+	fill: #333;
 }
 
 .chart {
 	width: 100%;
 	overflow: visible;
 	position: relative;
-	margin-bottom: 4rem;
+	margin: 6rem 0;
 	border-top: 1px solid #f7f7f7;
 	border-bottom: 1px solid #F7f7f7;
 	background: #FFF;
@@ -28,19 +80,21 @@ text {
 .zoom-controls {
 	display: inline-block;
 	position: absolute;
-	bottom: -45px;
-	right: 15px;
+	top: 10px;
+	right: 2.5%;
 }
 
 .button {
 	display: inline-block;
-	padding: 5px 10px;
+	padding: 8px 10px 5px 10px;
 	background: #e2e2e2;
 	color: #999999;
-	font-family: 'nyt-franklin','NYT Franklin', 'Franklin Gothic', 'franklin-gothic', helvetica;
+	font-family: 'NYTFranklin', 'nyt-franklin','NYT Franklin', 'Franklin Gothic', 'franklin-gothic', helvetica;
 	border-radius: 4px;
 	text-decoration: none;
 	margin-left: 15px;
+	font-size: 13px;
+	font-weight: 600;
 }
 
 .row {
@@ -51,15 +105,23 @@ g {
 	overflow: visible;
 }
 
-h1 {
-	font-family: 'nyt-franklin','NYT Franklin', 'Franklin Gothic', 'franklin-gothic', helvetica;
-	padding: 0 18px;
-	font-weight: 400;
+svg *:not(.dragVolume):not(.tooltip):not(.row){
+	-webkit-transition: all .4s cubic-bezier(.73,0,.23,1);
+	transition: all .4s cubic-bezier(.73,0,.23,1);
+}
+
+.range-label {
+	font-family: 'NYTFranklin', 'nyt-franklin','NYT Franklin', 'Franklin Gothic', 'franklin-gothic', helvetica;
+	font-size: 11px;
+	font-weight: 600;
 	color: #333;
+	text-transform: uppercase;
+	letter-spacing: 1px;
 }
 
 .story {
 	z-index: 1;
+	cursor: pointer;
 }
 
 .story circle {
@@ -104,13 +166,13 @@ h1 {
 	position: absolute;
 	top: 0;
 	left: 0;
-	padding: 10px;
+	padding: 10px 2.5%;
 	width: 50%;
 }
 
 .legend-item {
 	display: inline-block;
-	font-family: 'nyt-franklin','NYT Franklin', 'Franklin Gothic', 'franklin-gothic', helvetica;
+	font-family: 'NYTFranklin', 'nyt-franklin','NYT Franklin', 'Franklin Gothic', 'franklin-gothic', helvetica;
 	padding: 2px 5px 3px;
 	background: #F3F3F3;
 	border-radius: 3px;
@@ -122,6 +184,9 @@ h1 {
 	display: inline-block;
 	margin: 0 0 0 7px;
 	color: #333;
+	font-size: 11px;
+	text-transform: uppercase;
+	letter-spacing: 1px;
 }
 
 .legend-key {
