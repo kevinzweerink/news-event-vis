@@ -189,7 +189,7 @@
 
 	Vis.prototype.positionGuide = function (x) {
 		this.guide.attr('transform', 'translate(' + x + ', 0)');
-		this.guide.selectAll('text').text(moment(this.x.invert(x)).format('MMMM Do YYYY h:mm a'))
+		this.guide.selectAll('text').text(moment(this.x.invert(x)).format('M[/]D[/]YYYY h:mm a'))
 	}
 
 	Vis.prototype.listen = function () {
@@ -201,6 +201,7 @@
 			var e = new CustomEvent('moveTo', { 'detail' : mouse[0] });
 			window.dispatchEvent(e);
 		});
+
 
 		var drag = d3.behavior.drag();
 		var origin;
@@ -219,6 +220,7 @@
 				.attr('width', 0)
 				.attr('fill', '#F7EE68')
 				.attr('opacity', 0.15)
+				.attr('pointer-events', 'none')
 		});
 
 		drag.on('drag', function () {
@@ -270,6 +272,12 @@
 				vis.scaleTo(startDate, endDate);
 			}
 		});
+
+		this.canvas.selectAll('.story')
+			.on('click', function(d) { 
+				console.log('clicked');
+				window.open(d.url) 
+			});
 
 		window.addEventListener('keydown', function(e) {
 			if (e.keyCode === 27 && vis.dragVolume) {
@@ -461,7 +469,6 @@
 					return 'translate(0, ' + (vis.dimensions.canvasHeight - pos * vis.dimensions.rowHeight - vis.dimensions.rowHeight) + ')'; 
 				})
 				.attr('data-color', function(d, i) { return vis.colorForRole(d.role) })
-				.on('click', function(d) { window.open(d.url) })
 
 		var hitTarget = story.append('rect')
 			.attr('class', 'row')
@@ -504,6 +511,14 @@
 			.enter()
 				.append('div')
 				.attr('class', 'legend-item')
+				.on('mouseenter', function (d) {
+					vis.canvas.selectAll('.story').filter(function(selection) { return selection.role === d[0] ? false : true })
+						.attr('opacity', 0.1); })
+				.on('mouseleave', function (d) {
+					vis.canvas.selectAll('.story')
+						.attr('opacity', 1);
+				})
+
 
 		legendItem.append('div')
 			.attr('class', 'legend-key')

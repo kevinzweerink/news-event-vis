@@ -105,7 +105,7 @@ g {
 	overflow: visible;
 }
 
-svg *:not(.dragVolume):not(.tooltip):not(.row){
+svg *:not(.dragVolume):not(.tooltip):not(.row):not(.lifespan){
 	-webkit-transition: all .4s cubic-bezier(.73,0,.23,1);
 	transition: all .4s cubic-bezier(.73,0,.23,1);
 }
@@ -153,6 +153,11 @@ svg *:not(.dragVolume):not(.tooltip):not(.row){
 	pointer-events: none;
 }
 
+.tooltip text {
+	font-weight: 500;
+	fill: #333;
+}
+
 .story:hover .tooltip {
 	opacity : 1;
 }
@@ -162,7 +167,6 @@ svg *:not(.dragVolume):not(.tooltip):not(.row){
 }
 
 .legend {
-	pointer-events: none;
 	position: absolute;
 	top: 0;
 	left: 0;
@@ -178,6 +182,11 @@ svg *:not(.dragVolume):not(.tooltip):not(.row){
 	border-radius: 3px;
 	margin-right: 8px;
 	margin-bottom: 8px;
+	cursor: crosshair;
+}
+
+.legend-item:hover {
+	background: #e2e2e2;
 }
 
 .legend-item h6 {
