@@ -274,8 +274,8 @@
 		});
 
 		this.canvas.selectAll('.story')
-			.on('click', function(d) { 
-				console.log('clicked');
+			.on('click', function(d) {
+				if (d3.event.defaultPrevented) return;
 				window.open(d.url) 
 			});
 
