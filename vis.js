@@ -4,6 +4,7 @@
 	moment().format();
 	var vis;
 
+	// Data colors for use across all graphs
 	var Palette = [
 		'#2E89F4',
 		'#F7A24F',
@@ -25,6 +26,15 @@
 		['boston.csv', 'Boston Marathon Bombing']
 	];
 
+	/*
+		  _   _ _____ ___ _     ___ _____ ___ _____ ____  
+		 | | | |_   _|_ _| |   |_ _|_   _|_ _| ____/ ___| 
+		 | | | | | |  | || |    | |  | |  | ||  _| \___ \ 
+		 | |_| | | |  | || |___ | |  | |  | || |___ ___) |
+		  \___/  |_| |___|_____|___| |_| |___|_____|____/ 
+	*/
+
+	// Simple thing for getting the size of an object
 	function objectSize(obj) {
 	  var size = 0, key;
 	  for (key in obj) {
@@ -33,21 +43,70 @@
 	  return size;
 	};
 
+	// Simple thing for checking if a date is valid
 	function isValidDate(d) {
 	  if ( Object.prototype.toString.call(d) !== "[object Date]" )
 	    return false;
 	  return !isNaN(d.getTime());
 	}
 
+	// Clean an array of all values matching deleteValue
+	// Use undefined to strip of empty places
 	Array.prototype.clean = function(deleteValue) {
-  for (var i = 0; i < this.length; i++) {
-    if (this[i] == deleteValue) {         
-      this.splice(i, 1);
-      i--;
-    }
-  }
-  return this;
-};
+	  for (var i = 0; i < this.length; i++) {
+	    if (this[i] == deleteValue) {         
+	      this.splice(i, 1);
+	      i--;
+	    }
+	  }
+	  return this;
+	};
+
+	var Sanitizer = {
+		// Expects list of times updated
+		parseChangeLog : function (changeLog, startDate) {
+			var log;
+
+			// Separate and trim
+			log = changeLog.split(';');
+			log = log.map(function (logItem) {
+				var time = new Date(logItem);
+
+				if (time !== undefined && isValidDate(time)) {
+					return time;
+				}
+			});
+
+			log = log.sort(function(a, b) {
+
+				if (a.getTime() < b.getTime()) {
+					return -1;
+				} else if (a.getTime() > b.getTime()) {
+					return 1;
+				} else if (a.getTime() === b.getTime()) {
+					return 0;
+				}
+
+			});
+			
+			if (log[0] === undefined) {
+				log[0] = startDate;
+			}
+
+			log.clean();
+
+			return log;
+		}
+	}
+
+	/*
+	 __     _____ ____  _   _   _    _     ___ _____   _  _____ ___ ___  _   _ 
+	 \ \   / /_ _/ ___|| | | | / \  | |   |_ _|__  /  / \|_   _|_ _/ _ \| \ | |
+	  \ \ / / | |\___ \| | | |/ _ \ | |    | |  / /  / _ \ | |  | | | | |  \| |
+	   \ V /  | | ___) | |_| / ___ \| |___ | | / /_ / ___ \| |  | | |_| | |\  |
+	    \_/  |___|____/ \___/_/   \_\_____|___/____/_/   \_\_| |___\___/|_| \_|
+
+	*/
 
 	var Vis = function (data, title) {
 		this.init(data, title);
@@ -287,36 +346,18 @@
 		});
 	}
 
-
-	Vis.prototype.colorForDesk = function (deskName) {
-		if (deskName.length === 0) {
-			return Palette[0];
-		}
-
-		this.deskColors = this.deskColors || {};
-
-		// If there is a color for this desk, return it
-		if (this.deskColors[deskName]) {
-			return this.deskColors[deskName];
-		}
-
-		// If there isn't, add one, and then recurse
-		this.deskColors[deskName] = Palette[objectSize(this.deskColors) % Palette.length];
-		return this.colorForDesk(deskName);
-	}
-
 	Vis.prototype.colorForRole = function (roleName) {
 		if (roleName.length === 0) {
 			return Palette[0];
 		}
 
-		this.roleColors = this.roleColors || {};
+		window.roleColors = window.roleColors || {};
  
-		if (this.roleColors[roleName]) {
-			return this.roleColors[roleName];
+		if (window.roleColors[roleName]) {
+			return window.roleColors[roleName];
 		}
 
-		this.roleColors[roleName] = Palette[objectSize(this.roleColors) % Palette.length];
+		window.roleColors[roleName] = Palette[objectSize(window.roleColors) % Palette.length];
 		return this.colorForRole(roleName);
 	}
 
@@ -427,6 +468,72 @@
 		return canvas;
 	}
 
+	Vis.prototype.filter = function () {
+		var items = d3.select(this.canvas.node().parentNode).selectAll('.legend-item.on');
+		var vis = this;
+
+		this.canvas.selectAll('.story').attr('opacity', 1);
+
+		if (items.empty()) {
+			var yi = 0;
+			var dayCache = new Date(vis.canvas.select('.story').datum().date.getTime());
+			
+			this.canvas.selectAll('.story')
+				.transition().duration(200).ease('elastic-in')
+				.attr('transform', function (d, i) {
+					if (d3.time.day.floor(dayCache).getTime() < d3.time.day.floor(d.date).getTime()) {
+						yi = 0;
+					}
+
+					dayCache = new Date(d.date.getTime());
+					var pos = yi;
+
+					yi++;
+
+					return 'translate(0, ' + (vis.dimensions.canvasHeight - pos * vis.dimensions.rowHeight - vis.dimensions.rowHeight) + ')'; 
+				})
+		} else {
+
+			this.canvas.selectAll('.story').filter(function(selection) {
+					var isSelected = false;
+					items.each(function (d) {
+						if (d[0] === selection.role) {
+							isSelected = true;
+						}
+					})
+					return !isSelected 
+				})
+				.attr('opacity', '0')
+
+			var yi = 0;
+			var dayCache = new Date(this.canvas.select('.story').datum().date.getTime());
+			
+			this.canvas.selectAll('.story').filter(function(selection) { 
+				 var isSelected = false;
+					items.each(function (d) {
+						if (d[0] === selection.role) {
+							isSelected = true;
+						}
+					})
+					return isSelected 
+				})
+				.transition().duration(600).delay(200).ease('bounce')
+				.attr('transform', function (d, i) {
+					if (d3.time.day.floor(dayCache).getTime() < d3.time.day.floor(d.date).getTime()) {
+						yi = 0;
+					}
+
+					dayCache = new Date(d.date.getTime());
+					var pos = yi;
+
+					yi++;
+
+					return 'translate(0, ' + (vis.dimensions.canvasHeight - pos * vis.dimensions.rowHeight - vis.dimensions.rowHeight) + ')'; 
+				})
+
+		}
+	}
+
 	Vis.prototype.drawStoriesChart = function () {
 
 		var vis = this;
@@ -507,18 +614,14 @@
 			.attr('class', 'legend');
 
 		var legendItem = legend.selectAll('.legend-item')
-			.data(Object.keys(this.roleColors).map(function(key) { return [key, vis.roleColors[key] ] }))
+			.data(Object.keys(window.roleColors).map(function(key) { return [key, window.roleColors[key] ] }))
 			.enter()
 				.append('div')
 				.attr('class', 'legend-item')
-				.on('mouseenter', function (d) {
-					vis.canvas.selectAll('.story').filter(function(selection) { return selection.role === d[0] ? false : true })
-						.attr('opacity', 0.1); })
-				.on('mouseleave', function (d) {
-					vis.canvas.selectAll('.story')
-						.attr('opacity', 1);
-				})
-
+				.on('click', function () {
+					this.classList.toggle('on');
+					vis.filter();
+				});
 
 		legendItem.append('div')
 			.attr('class', 'legend-key')
@@ -528,43 +631,14 @@
 			.text(function (d) { return d[0] })
 	}
 
-	// repository for data sanitizing functions
-	var Sanitizer = {
-		// Expects list of times updated
-		parseChangeLog : function (changeLog, startDate) {
-			var log;
+	/*
+	  ____  _____ _____ _   _ ____  
+	 / ___|| ____|_   _| | | |  _ \ 
+	 \___ \|  _|   | | | | | | |_) |
+	  ___) | |___  | | | |_| |  __/ 
+	 |____/|_____| |_|  \___/|_|    
 
-			// Separate and trim
-			log = changeLog.split(';');
-			log = log.map(function (logItem) {
-				var time = new Date(logItem);
-
-				if (time !== undefined && isValidDate(time)) {
-					return time;
-				}
-			});
-
-			log = log.sort(function(a, b) {
-
-				if (a.getTime() < b.getTime()) {
-					return -1;
-				} else if (a.getTime() > b.getTime()) {
-					return 1;
-				} else if (a.getTime() === b.getTime()) {
-					return 0;
-				}
-
-			});
-			
-			if (log[0] === undefined) {
-				log[0] = startDate;
-			}
-
-			log.clean();
-
-			return log;
-		}
-	}
+	*/
 
 	function drawGraph(data) {
 		d3.csv(data[0], function (d, i) {
