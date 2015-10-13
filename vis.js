@@ -506,7 +506,9 @@
 				.attr('opacity', '0')
 
 			var yi = 0;
+			var yiprime = 0;
 			var dayCache = new Date(this.canvas.select('.story').datum().date.getTime());
+			var dayCachePrime = new Date(dayCache)
 			
 			this.canvas.selectAll('.story').filter(function(selection) { 
 				 var isSelected = false;
@@ -517,7 +519,20 @@
 					})
 					return isSelected 
 				})
-				.transition().duration(600).delay(200).ease('bounce')
+				.transition().duration(function (d) { 
+					if (d3.time.day.floor(dayCachePrime).getTime() < d3.time.day.floor(d.date).getTime()) {
+						yiprime = 0;
+					}
+
+					dayCachePrime = new Date(d.date.getTime());
+
+					yiprime++;
+
+					var pos = d3.transform(d3.select(this).attr('transform')).translate[1];
+					var offset = Math.abs(pos/vis.dimensions.rowHeight - yiprime);
+
+					return offset * 38;
+				}).delay(function(d, i) { return 1.5*i + 200 }).ease('bounce')
 				.attr('transform', function (d, i) {
 					if (d3.time.day.floor(dayCache).getTime() < d3.time.day.floor(d.date).getTime()) {
 						yi = 0;
